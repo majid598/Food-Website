@@ -7,6 +7,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "SET NODE_ENV=production & node server.js",
+    "build": "run build",
     "dev": "SET NODE_ENV=development & nodemon server.js"
   },
   "author": "",
