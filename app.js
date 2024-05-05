@@ -1,61 +1,47 @@
-import express, { urlencoded } from "express";
-import { errorMiddleware } from "./Middlewares/errorMiddleware.js";
+import express from "express";
 import dotenv from "dotenv";
-import { connectPassport } from "./Utils/Provider.js";
-import session from "express-session";
-import cookieParser from "cookie-parser";
-import passport from "passport";
+import { errorMiddleware } from "./middlewares/error.js";
 import cors from "cors";
-
+import cookieParser from "cookie-parser";
+import dbConnect from "./utils/db.js";
 const app = express();
 
 dotenv.config({
-  path: "./config/config.env",
+  path: "./.env",
 });
 
 app.use(
-  session({
-    secret: "laskjdflskd",
-    resave: false,
-    saveUninitialized: false,
-
-    cookie: {
-      secure: process.env.NODE_ENV === "development" ? false : true,
-      httpOnly: process.env.NODE_ENV === "development" ? false : true,
-      sameSite: process.env.NODE_ENV === "development" ? false : "none",
-    },
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:4173",
+      process.env.CLIENT_URL,
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
   })
 );
+
+app.use(express.json());
 
 app.use(cookieParser());
-app.use(express.json());
-app.use(
-  urlencoded({
-    extended: true,
-  })
-);
 
-app.use(
-  cors({
-    credentials: true,
-    origin: process.env.FRONTEND_URL,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-  })
-);
+const PORT = process.env.PORT;
 
-app.use(passport.authenticate("session"));
-app.use(passport.initialize());
-app.use(passport.session());
-app.enable("trust proxy");
+import userRoute from "./routes/user.js";
+import orderRoute from "./routes/order.js";
 
-connectPassport();
+dbConnect(process.env.MONGO_URI);
 
-import userRoute from "./Routes/User.js";
-import orderRoute from "./Routes/Order.js";
+app.use("/api/v1/user", userRoute);
+app.use("/api/v1/order", orderRoute);
 
-app.use("/api/v1", userRoute);
-app.use("/api/v1", orderRoute);
+app.get("/", (req, res) => {
+  res.send("Server Is Working Perfectly");
+});
 
 app.use(errorMiddleware);
 
-export default app;
+app.listen(PORT, () => {
+  console.log(`Server is running at port number: ${PORT}`);
+});

@@ -1,164 +1,115 @@
-import { asyncError } from "../Middlewares/errorMiddleware.js";
-import { Order } from "../Models/Order.js";
-import { Payment } from "../Models/Payment.js";
-import ErrorHandler from "../Utils/ErrorHandler.js";
-import { instance } from "../server.js";
-import crypto from "crypto";
+import { TryCatch } from "../middlewares/error.js";
+import { Order } from "../models/order.js";
+import ErrorHandler from "../utils/utility.js";
 
-export const placeOrder = asyncError(async (req, res, next) => {
+const placeOrder = TryCatch(async (req, res, next) => {
   const {
-    shippingInfo,
-    orderItems,
-    paymentMethod,
-    itemsPrice,
-    taxPrice,
+    items,
+    subtotal,
     shippingCharges,
+    tax,
     totalAmount,
+    shippingInfo,
+    paymentMethod,
+    paymentRef,
   } = req.body;
+  const user = req.user;
 
-  const user = req.user._id;
-
-  const orderOptions = {
-    shippingInfo,
-    orderItems,
-    paymentMethod,
-    itemsPrice,
-    taxPrice,
-    shippingCharges,
-    totalAmount,
+  const order = await Order.create({
     user,
-  };
+    items,
+    subtotal,
+    shippingCharges,
+    tax,
+    totalAmount,
+    shippingInfo,
+    paymentMethod,
+    paymentRef,
+  });
 
-  await Order.create(orderOptions);
-
-  res.status(201).json({
+  return res.status(200).json({
     success: true,
-    message: "Order Placed Successfully via Cash On Delivery",
+    message: "Order placed successfully",
   });
 });
 
-export const placeOrderOnline = asyncError(async (req, res, next) => {
-  const {
-    shippingInfo,
-    orderItems,
-    paymentMethod,
-    itemsPrice,
-    taxPrice,
-    shippingCharges,
-    totalAmount,
-  } = req.body;
-
-  const user = req.user._id;
-
-  const orderOptions = {
-    shippingInfo,
-    orderItems,
-    paymentMethod,
-    itemsPrice,
-    taxPrice,
-    shippingCharges,
-    totalAmount,
-    user,
-  };
-
-  const options = {
-    amount: Number(totalAmount) * 100,
-    currency: "PKR",
-  };
-  const order = await instance.orders.create(options);
-
-  res.status(201).json({
+const allOrders = TryCatch(async (req, res, next) => {
+  const orders = await Order.find().populate("user", "name");
+  return res.status(200).json({
     success: true,
-    order,
-    orderOptions,
+    orders,
   });
 });
-
-export const paymentVerification = asyncError(async (req, res, next) => {
-  const {
-    razorpay_payment_id,
-    razorpay_order_id,
-    razorpay_signature,
-    orderOptions,
-  } = req.body;
-
-  const body = razorpay_order_id + "|" + razorpay_payment_id;
-
-  const expectedSignature = crypto
-    .createHmac("sha256", process.env.RAZORPAY_API_SECRET)
-    .update(body)
-    .digest("hex");
-
-  const isAuthentic = expectedSignature === razorpay_signature;
-
-  if (isAuthentic) {
-    const payment = await Payment.create({
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-    });
-
-    await Order.create({
-      ...orderOptions,
-      paidAt: new Date(Date.now()),
-      paymentInfo: payment._id,
-    });
-
-    res.status(201).json({
-      success: true,
-      message: `Order Placed Successfully. Payment ID: ${payment._id}`,
-    });
-  } else {
-    return next(new ErrorHandler("Payment Failed", 400));
-  }
-});
-
-export const getMyOrders = asyncError(async (req, res, next) => {
-  const orders = await Order.find({
-    user: req.user._id,
-  }).populate("user", "name");
-
-  res.status(200).json({
+const myOrders = TryCatch(async (req, res, next) => {
+  const orders = await Order.find({ user: req.user });
+  return res.status(200).json({
     success: true,
     orders,
   });
 });
 
-export const getOrderDetails = asyncError(async (req, res, next) => {
+const singleOrder = TryCatch(async (req, res, next) => {
   const order = await Order.findById(req.params.id).populate("user", "name");
-
-  if (!order) return next(new ErrorHandler("Invalid Order Id", 404));
-
-  res.status(200).json({
+  return res.status(200).json({
     success: true,
     order,
   });
 });
 
-export const getAdminOrders = asyncError(async (req, res, next) => {
-  const orders = await Order.find({}).populate("user", "name");
+const stats = TryCatch(async (req, res, next) => {
+  const orders = await Order.find();
+  let totalIncome = 0;
+  orders.forEach((order) => {
+    totalIncome += order.totalAmount;
+  });
 
-  res.status(200).json({
+  const preparingOrders = await Order.find({ status: "Preparing" });
+  const shippedOrders = await Order.find({ status: "Shipped" });
+  const deliveredOrders = await Order.find({ status: "Delivered" });
+
+  return res.status(200).json({
     success: true,
-    orders,
+    totalIncome,
+    preparingOrders: preparingOrders.length,
+    shippedOrders: shippedOrders.length,
+    deliveredOrders: deliveredOrders.length,
   });
 });
-export const processOrder = asyncError(async (req, res, next) => {
+
+const statusUpdate = TryCatch(async (req, res, next) => {
   const order = await Order.findById(req.params.id);
 
-  if (!order) return next(new ErrorHandler("Invalid Order Id", 404));
+  if (order.status === "Delivered")
+    return next(new ErrorHandler("Order Already Delivered"));
 
-  if (order.orderStatus === "Preparing") order.orderStatus = "Shipped";
-  else if (order.orderStatus === "Shipped") {
-    order.orderStatus = "Delivered";
-    order.deliveredAt = new Date(Date.now());
-  } else if (order.orderStatus === "Delivered")
-    return next(new ErrorHandler("Food Already Delivered", 400));
+  if (order.status === "Canceled")
+    return next(new ErrorHandler("Order Canceled"));
+
+  switch (order.status) {
+    case "Preparing":
+      order.status = "Shipped";
+      break;
+    case "Shipped":
+      order.status = "Delivered";
+      order.deliveredAt = Date.now().toString();
+      break;
+    default:
+      order.status = "Delivered";
+      break;
+  }
 
   await order.save();
 
-  res.status(200).json({
+  return res.status(200).json({
     success: true,
-    message: "Status Updated Successfully",
+    message: `Order ${
+      order.status === "Shipped"
+        ? "Shipped Successfully"
+        : order.status === "Delivered"
+        ? "Delivered successfully"
+        : "already Delivered"
+    }`,
   });
 });
+
+export { placeOrder, allOrders, myOrders, singleOrder, stats, statusUpdate };

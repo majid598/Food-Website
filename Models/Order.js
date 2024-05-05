@@ -1,115 +1,97 @@
-import mongoose from "mongoose";
+import mongoose, { model } from "mongoose";
 
-const schema = new mongoose.Schema({
-  shippingInfo: {
-    hNo: {
-      type: String,
+const schema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: true,
     },
-    city: {
-      type: String,
-      required: true,
-    },
-    state: {
-      type: String,
-      required: true,
-    },
-
-    country: {
-      type: String,
-      required: true,
-    },
-    pinCode: {
+    items: [
+      {
+        itemNum: {
+          type: Number,
+          required: true,
+        },
+        title: {
+          type: String,
+          required: true,
+        },
+        price: {
+          type: Number,
+          required: true,
+        },
+        img: {
+          type: String,
+          required: true,
+        },
+        quantity: {
+          type: Number,
+          required: true,
+        },
+      },
+    ],
+    subtotal: {
       type: Number,
       required: true,
     },
-    phoneNo: {
+    shippingCharges: {
       type: Number,
       required: true,
     },
-  },
-
-  orderItems: {
-    cheeseBurger: {
-      price: {
+    tax: {
+      type: Number,
+      required: true,
+    },
+    totalAmount: {
+      type: Number,
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ["Preparing", "Shipped", "Delivered"],
+      default: "Preparing",
+    },
+    paymentMethod: {
+      type: String,
+      enum: ["C.O.D", "Online"],
+      required: true,
+    },
+    paymentRef: {
+      type: String,
+      required: true,
+    },
+    shippingInfo: {
+      houseNumber: {
+        type: String,
+        required: true,
+      },
+      city: {
+        type: String,
+        required: true,
+      },
+      country: {
+        type: String,
+        required: true,
+      },
+      state: {
+        type: String,
+        required: true,
+      },
+      pinCode: {
         type: Number,
         required: true,
       },
-      quantity: {
+      phoneNumber: {
         type: Number,
         required: true,
       },
     },
+    deliveredAt: Date,
+  },
+  {
+    timestamps: true,
+  }
+);
 
-    vegCheeseBurger: {
-      price: {
-        type: Number,
-        required: true,
-      },
-      quantity: {
-        type: Number,
-        required: true,
-      },
-    },
-
-    burgerWithFries: {
-      price: {
-        type: Number,
-        required: true,
-      },
-      quantity: {
-        type: Number,
-        required: true,
-      },
-    },
-  },
-
-  user: {
-    type: mongoose.Schema.ObjectId,
-    ref: "User",
-    required: true,
-  },
-
-  paymentMethod: {
-    type: "String",
-    enum: ["COD", "Online"],
-    default: "COD",
-  },
-
-  paymentInfo: {
-    type: mongoose.Schema.ObjectId,
-    ref: "Payment",
-  },
-  paidAt: Date,
-
-  itemsPrice: {
-    type: Number,
-    default: 0,
-  },
-  taxPrice: {
-    type: Number,
-    default: 0,
-  },
-  shippingCharges: {
-    type: Number,
-    default: 0,
-  },
-  totalAmount: {
-    type: Number,
-    default: 0,
-  },
-
-  orderStatus: {
-    type: String,
-    enum: ["Preparing", "Shipped", "Delivered"],
-    default: "Preparing",
-  },
-
-  deliveredAt: Date,
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
-
-export const Order = mongoose.model("Order", schema);
+export const Order = mongoose.models.Order || model("Order", schema);

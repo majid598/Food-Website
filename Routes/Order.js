@@ -1,29 +1,19 @@
 import express from "express";
 import {
-  getAdminOrders,
-  getMyOrders,
-  getOrderDetails,
-  paymentVerification,
+  allOrders,
+  myOrders,
   placeOrder,
-  placeOrderOnline,
-  processOrder,
-} from "../Controllers/Order.js";
-import { authorizeAdmin, isAuthenticated } from "../Middlewares/auth.js";
-
+  singleOrder,
+  stats,
+  statusUpdate,
+} from "../controllers/order.js";
+import { isAuthenticated } from "../middlewares/auth.js";
 const router = express.Router();
 
-router.post("/createorder", isAuthenticated, placeOrder);
-
-router.post("/createorderonline", isAuthenticated, placeOrderOnline);
-
-router.post("/paymentverification", isAuthenticated, paymentVerification);
-
-router.get("/myorders", isAuthenticated, getMyOrders);
-
-router.get("/order/:id", isAuthenticated, getOrderDetails);
-
-// Add Admin Middleware
-router.get("/admin/orders", isAuthenticated, authorizeAdmin, getAdminOrders);
-router.get("/admin/order/:id", isAuthenticated, authorizeAdmin, processOrder);
+router.post("/place", isAuthenticated, placeOrder);
+router.get("/all", isAuthenticated, allOrders);
+router.get("/my", isAuthenticated, myOrders);
+router.get("/stats", isAuthenticated, stats);
+router.route("/:id", isAuthenticated).get(singleOrder).put(statusUpdate);
 
 export default router;

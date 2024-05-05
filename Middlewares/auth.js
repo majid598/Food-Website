@@ -1,15 +1,14 @@
-import ErrorHandler from "../Utils/ErrorHandler.js";
+import jwt from "jsonwebtoken";
+import ErrorHandler from "../utils/utility.js";
 
 export const isAuthenticated = (req, res, next) => {
-  const token = req.cookies["connect.sid"];
-  if (!token) {
-    return next(new ErrorHandler("Not Logged In", 401));
-  }
-  next();
-};
-export const authorizeAdmin = (req, res, next) => {
-  if (req.user.role !== "admin") {
-    return next(new ErrorHandler("Only Admin Allowed", 405));
-  }
+  const token = req.cookies["Food-token"];
+
+  if (!token) return next(new ErrorHandler("Please Login first", 404));
+
+  const decodeData = jwt.verify(token, process.env.JWT_SECRET);
+
+  req.user = decodeData._id;
+
   next();
 };
