@@ -1,8 +1,8 @@
-import express from "express";
-import dotenv from "dotenv";
-import { errorMiddleware } from "./middlewares/error.js";
-import cors from "cors";
 import cookieParser from "cookie-parser";
+import cors from "cors";
+import dotenv from "dotenv";
+import express from "express";
+import { errorMiddleware } from "./Middlewares/error.js";
 import dbConnect from "./utils/db.js";
 const app = express();
 
@@ -28,8 +28,8 @@ app.use(cookieParser());
 
 const PORT = process.env.PORT;
 
-import userRoute from "./routes/user.js";
 import orderRoute from "./routes/order.js";
+import userRoute from "./routes/user.js";
 
 dbConnect(process.env.MONGO_URI);
 
