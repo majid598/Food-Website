@@ -1,7 +1,7 @@
-import { TryCatch } from "../middlewares/error.js";
+import { TryCatch } from "../Middlewares/error.js";
 import ErrorHandler from "../utils/utility.js";
 import { cookieOptions, sendToken } from "../utils/features.js";
-import { User } from "../models/user.js";
+import { User } from "../Models/User.js";
 import { compare } from "bcrypt";
 
 const newUser = TryCatch(async (req, res, next) => {

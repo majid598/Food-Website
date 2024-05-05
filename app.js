@@ -28,8 +28,8 @@ app.use(cookieParser());
 
 const PORT = process.env.PORT;
 
-import orderRoute from "./routes/order.js";
-import userRoute from "./routes/user.js";
+import orderRoute from "./Routes/Order.js";
+import userRoute from "./Routes/User.js";
 
 dbConnect(process.env.MONGO_URI);
 

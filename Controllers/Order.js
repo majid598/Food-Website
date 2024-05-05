@@ -1,5 +1,5 @@
-import { TryCatch } from "../middlewares/error.js";
-import { Order } from "../models/order.js";
+import { TryCatch } from "../Middlewares/error.js";
+import { Order } from "../Models/Order.js";
 import ErrorHandler from "../utils/utility.js";
 
 const placeOrder = TryCatch(async (req, res, next) => {
