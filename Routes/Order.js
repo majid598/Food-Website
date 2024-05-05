@@ -6,8 +6,8 @@ import {
   singleOrder,
   stats,
   statusUpdate,
-} from "../controllers/order.js";
-import { isAuthenticated } from "../middlewares/auth.js";
+} from "../Controllers/Order.js";
+import { isAuthenticated } from "../Middlewares/auth.js";
 const router = express.Router();
 
 router.post("/place", isAuthenticated, placeOrder);
